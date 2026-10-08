@@ -1,0 +1,17 @@
+{
+  "name": "gestion-entreprise",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Application de gestion d'entreprise tout-en-un (guichet unique)",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev -w apps/api",
+    "dev:web": "npm run dev -w apps/web",
+    "build": "npm run build --workspaces",
+    "test": "npm test -w apps/api",
+    "db:migrate": "npm run prisma:migrate -w apps/api",
+    "db:seed": "npm run prisma:seed -w apps/api"
+  }
+}

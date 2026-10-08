@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Une société du groupe. Chaque société a ses propres départements et utilisateurs.
+model Company {
+  id          String       @id @default(cuid())
+  name        String
+  legalForm   String?      /// SARL, SA, SAS...
+  rccm        String?      /// Registre du commerce (RCCM)
+  taxId       String?      /// Numéro de compte contribuable (NCC)
+  country     String       @default("CI")
+  currency    String       @default("XOF")
+  isActive    Boolean      @default(true)
+  departments Department[]
+  users       User[]
+  roleGrants  UserRole[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+/// Département d'une société. Peut avoir des sous-départements.
+model Department {
+  id        String       @id @default(cuid())
+  company   Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String
+  name      String
+  code      String?
+  parent    Department?  @relation("DepartmentTree", fields: [parentId], references: [id], onDelete: SetNull)
+  parentId  String?
+  children  Department[] @relation("DepartmentTree")
+  manager   User?        @relation("DepartmentManager", fields: [managerId], references: [id], onDelete: SetNull)
+  managerId String?
+  members   User[]       @relation("DepartmentMembers")
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model User {
+  id                 String       @id @default(cuid())
+  email              String       @unique
+  fullName           String
+  googleSub          String?      @unique
+  isActive           Boolean      @default(true)
+  /// Super admin : contourne toutes les règles de permission.
+  isSuperAdmin       Boolean      @default(false)
+  company            Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  companyId          String?
+  department         Department?  @relation("DepartmentMembers", fields: [departmentId], references: [id], onDelete: SetNull)
+  departmentId       String?
+  managedDepartments Department[] @relation("DepartmentManager")
+  roles              UserRole[]
+  auditLogs          AuditLog[]
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([companyId])
+  @@index([departmentId])
+}
+
+/// Portée d'une permission : sur quelles données elle s'applique.
+enum Scope {
+  OWN        /// ses propres enregistrements
+  DEPARTMENT /// son département et ses sous-départements
+  COMPANY    /// toute sa société
+  ALL        /// toutes les sociétés du groupe
+}
+
+/// Rôle (système ou profil personnalisé).
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  isSystem    Boolean          @default(false)
+  permissions RolePermission[]
+  users       UserRole[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model RolePermission {
+  id     String @id @default(cuid())
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId String
+  module String /// ex. companies, departments, crm, hr...
+  action String /// read, create, update, delete, export, approve
+  scope  Scope
+
+  @@unique([roleId, module, action])
+}
+
+/// Attribution d'un rôle à un utilisateur, éventuellement limitée à une société.
+model UserRole {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId    String
+  /// Société sur laquelle le rôle s'applique ; vide = société de l'utilisateur.
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String?
+
+  @@unique([userId, roleId, companyId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
