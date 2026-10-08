@@ -4,6 +4,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuditViewModule } from './audit/audit.controller';
 import { AuditModule } from './audit/audit.service';
 import { AuthModule } from './auth/auth.controller';
+import { CasesModule } from './cases/cases.controller';
+import { CrmModule } from './crm/crm.controller';
+import { EmailsModule } from './emails/emails.controller';
 import { CompaniesModule } from './companies/companies.controller';
 import { DepartmentsModule } from './departments/departments.controller';
 import { AuthGuard } from './permissions/auth.guard';
@@ -28,6 +31,9 @@ import { UsersModule } from './users/users.controller';
     UsersModule,
     RolesModule,
     AuditViewModule,
+    CrmModule,
+    CasesModule,
+    EmailsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: AuthGuard }],
 })

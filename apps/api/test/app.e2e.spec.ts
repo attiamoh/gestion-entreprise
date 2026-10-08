@@ -1,18 +1,10 @@
 import { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
-import { execSync } from 'child_process';
 import request from 'supertest';
-
-// Base dédiée aux tests : un schéma séparé de la base de développement.
-const base = process.env.DATABASE_URL ?? 'postgresql://gestion:gestion@localhost:5432/gestion';
-process.env.DATABASE_URL = `${base.split('?')[0]}?schema=e2e`;
-process.env.JWT_SECRET = 'test-secret';
-process.env.ALLOW_DEV_LOGIN = 'true';
-
-import { AppModule } from '../src/app.module';
-import { configureApp } from '../src/bootstrap';
 import { seedRoles } from '../prisma/seed';
+import { resetSchema, startApp, useTestSchema } from './helpers';
+
+const SCHEMA = useTestSchema('e2e');
 
 jest.setTimeout(60_000);
 
@@ -41,16 +33,11 @@ describe('Sociétés, départements et permissions (e2e)', () => {
   const roleId = async (name: string) => (await prisma.role.findUniqueOrThrow({ where: { name } })).id;
 
   beforeAll(async () => {
-    prisma = new PrismaClient();
-    // Repart d'un schéma de test vide à chaque exécution.
-    await prisma.$executeRawUnsafe('DROP SCHEMA IF EXISTS e2e CASCADE');
-    execSync('npx prisma migrate deploy', { env: process.env, stdio: 'ignore' });
+    prisma = await resetSchema(SCHEMA);
     await seedRoles(prisma);
     await prisma.user.create({ data: { email: 'root@groupe.ci', fullName: 'Root', isSuperAdmin: true } });
 
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = configureApp(moduleRef.createNestApplication());
-    await app.init();
+    app = await startApp();
     await login('root', 'root@groupe.ci');
   });
 

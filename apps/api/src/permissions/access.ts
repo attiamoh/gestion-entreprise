@@ -108,3 +108,20 @@ export function covers(
   if (target.ownerId && access.ownerId === target.ownerId) return true;
   return false;
 }
+
+/**
+ * Peut-on créer un enregistrement dont on sera propriétaire dans cette société et ce département ?
+ * Hors accès groupe, il faut la portée société, ou rester dans sa société et dans son périmètre de départements.
+ */
+export function canCreateIn(
+  access: Access,
+  principal: Pick<Principal, 'companyId' | 'departmentId'>,
+  target: { companyId: string; departmentId?: string | null },
+): boolean {
+  if (access.kind === 'all') return true;
+  if (access.kind === 'none') return false;
+  if (access.companyIds.includes(target.companyId)) return true;
+  if (target.companyId !== principal.companyId) return false;
+  const department = target.departmentId ?? null;
+  return department === null || department === principal.departmentId || access.departmentIds.includes(department);
+}
