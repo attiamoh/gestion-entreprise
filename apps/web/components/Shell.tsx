@@ -11,7 +11,7 @@ export const useMe = () => useContext(MeContext);
 /** Modules du menu ; ceux qui ne sont pas encore livrés sont affichés grisés. */
 const NAV = [
   { href: '/', label: 'Ma journée', module: null, ready: true },
-  { href: '/emails', label: 'E-mails', module: 'emails', ready: false },
+  { href: '/emails', label: 'E-mails', module: 'emails', ready: true },
   { href: '/dossiers', label: 'Dossiers', module: 'cases', ready: false },
   { href: '/taches', label: 'Tâches et projets', module: 'tasks', ready: false },
   { href: '/crm', label: 'Suivi commercial', module: 'crm', ready: false },

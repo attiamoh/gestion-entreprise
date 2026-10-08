@@ -1,4 +1,4 @@
-import { covers, Principal, resolveAccess, scopeWhere, widestScope } from './access';
+import { canCreateIn, covers, Principal, resolveAccess, scopeWhere, widestScope } from './access';
 
 const base: Principal = {
   id: 'u1',
@@ -72,5 +72,22 @@ describe('scopeWhere', () => {
     expect(scopeWhere({ kind: 'scoped', companyIds: [], departmentIds: [], ownerId: 'u1' }, { company: 'id' })).toBeNull();
     expect(scopeWhere({ kind: 'none' }, { company: 'id' })).toBeNull();
     expect(scopeWhere({ kind: 'all' }, { company: 'id' })).toEqual({});
+  });
+});
+
+describe('canCreateIn', () => {
+  const own = { kind: 'scoped' as const, companyIds: [], departmentIds: [], ownerId: 'u1' };
+  it('limite une portée personnelle à sa société et son département', () => {
+    expect(canCreateIn(own, base, { companyId: 'c1' })).toBe(true);
+    expect(canCreateIn(own, base, { companyId: 'c1', departmentId: 'd1' })).toBe(true);
+    expect(canCreateIn(own, base, { companyId: 'c1', departmentId: 'd2' })).toBe(false);
+    expect(canCreateIn(own, base, { companyId: 'c2' })).toBe(false);
+  });
+  it('autorise les sous-départements avec la portée département', () => {
+    const dept = { ...own, departmentIds: ['d1', 'd1a'] };
+    expect(canCreateIn(dept, base, { companyId: 'c1', departmentId: 'd1a' })).toBe(true);
+  });
+  it('autorise toute la société avec la portée société', () => {
+    expect(canCreateIn({ ...own, companyIds: ['c2'] }, base, { companyId: 'c2', departmentId: 'dx' })).toBe(true);
   });
 });

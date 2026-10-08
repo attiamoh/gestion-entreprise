@@ -69,3 +69,42 @@ export interface Department {
 }
 
 export const can = (me: Me | null, module: string, action: string) => Boolean(me?.permissions[module]?.[action]);
+
+export interface ThreadSummary {
+  id: string;
+  subject: string;
+  lastMessageAt: string;
+  linkedBy: string | null;
+  owner: { id: string; fullName: string };
+  case: { id: string; reference: string; title: string } | null;
+  contact: { id: string; email: string; fullName: string | null } | null;
+  messages: { fromEmail: string; fromName: string | null; snippet: string; sentAt: string; direction: 'INBOUND' | 'OUTBOUND' }[];
+  _count: { messages: number };
+}
+
+export interface EmailMessage {
+  id: string;
+  direction: 'INBOUND' | 'OUTBOUND';
+  fromEmail: string;
+  fromName: string | null;
+  to: string[];
+  cc: string[];
+  subject: string;
+  bodyText: string;
+  sentAt: string;
+  attachments: { id: string; filename: string; size: number }[];
+}
+
+export interface ThreadDetail extends Omit<ThreadSummary, 'messages' | '_count' | 'contact'> {
+  owner: { id: string; fullName: string; email: string };
+  contact: { id: string; email: string; fullName: string | null; clientAccount: { id: string; name: string } | null } | null;
+  messages: EmailMessage[];
+}
+
+export interface CaseSummary {
+  id: string;
+  reference: string;
+  title: string;
+  status: 'OPEN' | 'ON_HOLD' | 'CLOSED';
+  clientAccount: { id: string; name: string } | null;
+}
